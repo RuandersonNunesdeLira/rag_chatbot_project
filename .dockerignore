@@ -1,0 +1,27 @@
+# Git
+.git
+.gitignore
+
+# Docker
+.dockerignore
+Dockerfile
+
+# Ambiente Virtual Python
+venv/
+.venv/
+
+# Arquivos de Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Arquivos de configuração local e segredos
+.env
+
+# Banco de dados vetorial gerado localmente
+db/
+
+# Arquivos de documentação e específicos de IDEs
+*.md
+.vscode/
+.idea/

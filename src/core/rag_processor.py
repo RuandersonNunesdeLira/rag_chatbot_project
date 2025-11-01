@@ -30,7 +30,7 @@ class RagProcessor():
     """
 
         self.dictonary = {
-            "context": self.retriver,
+            "context": self.retriever,
             "question": RunnablePassthrough()
         } 
 

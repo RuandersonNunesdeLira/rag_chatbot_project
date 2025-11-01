@@ -1,0 +1,48 @@
+{
+    "family": "rag-chatbot-task",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "512",
+    "memory": "1024",
+    "executionRoleArn": "arn:aws:iam::920105261040:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+        {
+            "name": "rag-chatbot-container",
+            "image": "920105261040.dkr.ecr.us-east-1.amazonaws.com/rag-chatbot:latest",
+            "portMappings": [
+                {
+                    "containerPort": 8000,
+                    "protocol": "tcp"
+                }
+            ],
+            "secrets": [
+                {
+                    "name": "OPENAI_API_KEY",
+                    "valueFrom": "arn:aws:ssm:us-east-2:920105261040:parameter/chatbot/OPENAI_API_KEY"
+                },
+                {
+                    "name": "EVOLUTION_API_KEY",
+                    "valueFrom": "arn:aws:ssm:us-east-2:920105261040:parameter/chatbot/EVOLUTION_API_KEY"
+                },
+                {
+                    "name": "EVOLUTION_API_URL",
+                    "valueFrom": "arn:aws:ssm:us-east-2:920105261040:parameter/chatbot/EVOLUTION_API_URL"
+                },
+                {
+                    "name": "EVOLUTION_INSTANCE_NAME",
+                    "valueFrom": "arn:aws:ssm:us-east-2:920105261040:parameter/chatbot/EVOLUTION_INSTANCE_NAME"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/rag-chatbot-task",
+                    "awslogs-region": "us-east-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ]
+}
