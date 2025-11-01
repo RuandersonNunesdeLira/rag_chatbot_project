@@ -1,57 +1,54 @@
 import os
-import chromadb
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import DirectoryLoader
-from src.core.config import GOOGLE_API_KEY, CHROMA_DB_PATH
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
+from src.core import config
 
-if not GOOGLE_API_KEY:
-    raise ValueError("A chave da API do Google não foi encontrada. Verifique seu arquivo .env.")
+DATA_PATH = "data/"
+DB_PATH = config.CHROMA_DB_PATH
 
-os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
-def load_documents(directory='data'):
-    loader = DirectoryLoader(directory)
+def load_documents():
+    loader = DirectoryLoader(DATA_PATH, glob="*.pdf", loader_cls=PyPDFLoader)
     documents = loader.load()
-    
+    if not documents:
+        print("Nenhum documento PDF encontrado no diretório 'data/'.")
+        return None
+    print(f"{len(documents)} documento(s) carregado(s).")
     return documents
 
 
 def split_documents(documents):
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200
-    )
-
-    chunks = text_splitter.split_documents(documents)
-    return chunks
-
-
-def store_embeddings(chunks, persist_directory=CHROMA_DB_PATH):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    vector_db = chromadb.PersistentClient(path=persist_directory)
-
-    from langchain_community.vectorstores.chroma import Chroma
-
-    db = Chroma.from_documents(
-        documents=chunks,
-        embedding=embeddings,
-        persist_directory=persist_directory
-    )
-
-    return db
+    print("Dividindo documentos em chunks...")
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    texts = text_splitter.split_documents(documents)
+    print(f"Total de {len(texts)} chunks criados.")
+    return texts
 
 
 def main():
-    if not os.path.exists(CHROMA_DB_PATH):
-        os.makedirs(CHROMA_DB_PATH)
-
     documents = load_documents()
-    if documents:
-        chunks = split_documents(documents)
-        store_embeddings(chunks)
-    else:
-        print("Nenhum documento encontrado para processar.")
+    if not documents:
+        return
+
+    texts = split_documents(documents)
+
+    print("Criando embeddings e armazenando no ChromaDB...")
+    if not config.OPENAI_API_KEY:
+        raise ValueError(
+            "A chave da API da OpenAI não foi encontrada. Verifique seu arquivo .env."
+        )
+
+    embeddings_model = OpenAIEmbeddings(openai_api_key=config.OPENAI_API_KEY)
+
+    db = Chroma.from_documents(
+        documents=texts, embedding=embeddings_model, persist_directory=DB_PATH
+    )
+
+    db.persist()
+    print("Banco de dados vetorial criado e salvo com sucesso em:", DB_PATH)
+    print("Processo de ingestão concluído.")
 
 
 if __name__ == "__main__":
